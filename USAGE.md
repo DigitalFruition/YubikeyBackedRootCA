@@ -31,9 +31,9 @@ these steps on is secure, has full disk encryption, and is not used for any othe
 You can use any linux distribution of your choice and how to set up the machine is up to you;
 the following instructions are a rough guide on how to set up a Debian Linux machine.
 
-You can provision a Virtuam Lachine (VM) if you prefer. Note that this is s secure as the host
-machine is an attack vector against the VM. A VM might be easier, cheaper and safe enough for
-your needs... the choice is yours.
+You can provision a Virtual Machine (VM) if you prefer. Note that this is not as secure as using a dedicated machine, because  the host
+machine is an attack vector against the VM. A VM might be easier, cheaper and safe enough for your needs... the choice is yours.
+
 
 1. **Prepare a Debian Bullseye installation media** - Download the latest Debian Bullseye image from the official website and prepare a bootable USB or CD.
 
@@ -48,12 +48,13 @@ your needs... the choice is yours.
    - Avoid installing any unnecessary packages or services.
    - If using a Virtual Machine, either apply restrictive ingress/egress firewall rules,
      disconnect or remove the virtual ethernet device, and/or place the VM into a
-     quarrantined network or VLAN.
+     quarantined network or VLAN.
 
 ## Step 2: Execute Setup Scripts
 
 1. **Prepare Scripts**:
-   - Copy the scripts from the `scripts/setup` directory of this project into your air-gapped machine using a USB drive or similar means.
+   - Copy the scripts from the `scripts/setup` directory of this project into your air-gapped 
+     machine using a USB drive or similar means.
      You can also execute the commands from `scripts/setup` manually.
 
 2. **Run Setup Scripts**:
@@ -62,28 +63,58 @@ your needs... the choice is yours.
 
      ```bash
      cd /path/to/scripts/setup
-     chmod +x *.sh  # Make sure the scripts are executable
+     chmod +x setup.sh  # Make sure the scripts are executable
      ./setup.sh     # Run the setup script
      ```
 
 ## Step 3: Prepare Configuration Files
 
-1. **Copy OpenSSL Configuration Templates**:
-   - Copy `root/openssl.config.template` and `intermediate/openssl.config.template` from the project directory to the respective directories in `/opt/ca/`.
+1. **Create Your Root CA OpenSSL Configuration File**:
+   - In a local git clone of your forked copy of this repo, make a copy of the
+    `root/openssl.config.template` file named `root/openssl.config`.
+     
+     This file is the configuration controlling your new root CA.
+     The version in this repository is a template, and has values with the word
+     `TODO` in them which you will need to update for your CA:
+   - If necessary, adjust the `dir` directive under `[ CA_default ]`
+     
+     By default, we store everything under `/opt/ca`: the root CA files under
+     `/opt/ca/root` and the intermediate CA files under `/opt/ca/intermediate`.
+     If you plan to use different directories, update this path.
+   - If desired, adjust `default_days` to change how long the root and 
+     intermediate CA certificates are valid for. The template specifies 10 years
+     (3650 days).
+   - Similarly, adjust `default_crl_days` if desired. This specifies the default
+     length of time that Certificate Revocation Lists are valid for. The default
+     is 30 days.
+   - You *must* adjust the `*_default` values from the `[ req_distinguished_name ]`
+     section. These values all ship with `TODO_` and placeholder text. These
+     values specify what will be on the actual Root CA, so make sure they
+     properly describe your CA and environment. Pretend you're a user being asked
+     to install and trust this CA, and provide values they expect to see.
+   - The `[ pkcs11_section ]` contains values which worked for me on Debian 11,
+     but might need to be adjusted for your environment. I found these values
+     with `find / -type f -name libykcs11.so 2>/dev/null`
+   - Finally, edit `crlDistributionPoints` under `[ v3_ca ]` and specify the URI
+     where you will be uploading the Certificate Revocation list (CRL) for your
+     new root CA. **This is very important** as some applications will **not trust**
+     certificates unless they can validate them against the CRL.
 
-2. **Edit Configuration Files**:
-   - Navigate to `/opt/ca/root` and `/opt/ca/intermediate`.
-   - Rename the copied template files to `openssl.cnf` or a similar name that you'll recognize.
-   - Edit the configuration files according to your environment and needs:
+     The intention of this project is to hoste the CRL on the CloudFront Pages
+     site backed by the GitHub fork of this repository, but you can specify any
+     URI you like.
 
-     ```bash
-     cd /opt/ca/root
-     mv openssl.config.template openssl.cnf
-     nano openssl.cnf  # or use any other text editor
-     # Repeat for the intermediate configuration
-     ```
-
-   - Be sure to adjust paths, domain names, and other variables to fit your specific setup.
+2. **Create Your Intermediate CA OpenSSL Configuration File**:
+   - Similar to the Root CA configuration file, copy `intermediate/openssl.config.template`
+     to `intermediate/openssl.config`
+   - Again, if necessary, adjust the `dir` directive under `[ CA_default ]`
+   - Similarly you must adjust the `*_default` values from the `[ req_distinguished_name ]`
+     section.This is for the Intermediate CA, so they don't carry the implication
+     that an end user must verify before trusting the certificate... but they are
+     still public information and should be correct and sane.
+   - Adjust the policy under `[ policy_loose ]` if desired (E.G. if you want to
+     require that CSRs you sign have locality information)
+   - 
 
 ## Conclusion
 
