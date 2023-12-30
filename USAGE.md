@@ -1,12 +1,12 @@
-Below is a sample `USAGE.md` file, structured to guide users through setting up their own Certificate Authority environment based on the steps and configurations discussed. This file should be located in the root of your project directory and assumes the existence of other documents and scripts as referenced. Modify and expand upon it as necessary to fit the exact details and structure of your project.
-
----
-
 # Usage Instructions
 
 ## Introduction
 
-This document provides step-by-step instructions on setting up a Certificate Authority (CA) environment, replicating the setup for Digital Fruition, LLC's internal CA. It is designed to guide you through provisioning an air-gapped Certificate Authority using Debian Bullseye with Full Disk Encryption (FDE) and configuring the necessary components for both a Root and Intermediate CA.
+This document provides step-by-step instructions on setting up a Certificate Authority (CA) environment,
+replicating the setup for [Digital Fruition, LLC](https://www.digitalfruition.com/)'s [internal CA](https://ca.digitalfruition.com/).
+It is designed to guide you through provisioning an air-gapped Certificate Authority using Debian 
+Bullseye with Full Disk Encryption (FDE) and configuring the necessary components for both a Root and 
+Intermediate CA.
 
 For a detailed understanding of the project, its scope, and the architectural decisions, please refer to `README.md`.
 
@@ -17,8 +17,23 @@ Before proceeding, ensure that you have:
 - Basic understanding of Public Key Infrastructure (PKI) and certificate management.
 - Familiarity with Debian Linux and command-line interfaces.
 - The necessary hardware to set up an air-gapped environment.
+- A [Yubikey device](https://www.yubico.com/products/) to generate and store the private key for the Root CA.
+  (These instructions were tested with the Yubikey 5 series)
 
 ## Step 1: Provisioning the Air-gapped Machine
+
+Using an air-gapped machine for these steps is important because it ensures that you're operating in a safe and clean environment.
+
+While the private key for the Root CA will be stored on the Yubikey, the private key for the 
+Intermediate CA is stored on-disk. Therefore it's critical that the machine you run through 
+these steps on is secure, has full disk encryption, and is not used for any other purpose.
+
+You can use any linux distribution of your choice and how to set up the machine is up to you;
+the following instructions are a rough guide on how to set up a Debian Linux machine.
+
+You can provision a Virtuam Lachine (VM) if you prefer. Note that this is s secure as the host
+machine is an attack vector against the VM. A VM might be easier, cheaper and safe enough for
+your needs... the choice is yours.
 
 1. **Prepare a Debian Bullseye installation media** - Download the latest Debian Bullseye image from the official website and prepare a bootable USB or CD.
 
@@ -31,11 +46,15 @@ Before proceeding, ensure that you have:
 3. **Ensure Air-gap**:
    - Physically disconnect any network connections.
    - Avoid installing any unnecessary packages or services.
+   - If using a Virtual Machine, either apply restrictive ingress/egress firewall rules,
+     disconnect or remove the virtual ethernet device, and/or place the VM into a
+     quarrantined network or VLAN.
 
 ## Step 2: Execute Setup Scripts
 
 1. **Prepare Scripts**:
    - Copy the scripts from the `scripts/setup` directory of this project into your air-gapped machine using a USB drive or similar means.
+     You can also execute the commands from `scripts/setup` manually.
 
 2. **Run Setup Scripts**:
    - Navigate to the directory containing the scripts.
