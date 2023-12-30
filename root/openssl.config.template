@@ -1,0 +1,134 @@
+# This section names the default CA configuration to use when the
+# openssl ca utility is invoked. It points at the `[ CA_default ]` section
+[ ca ]
+default_ca = CA_root
+
+# This is one of the most critical sections, defining default directories,
+# file locations, and policies for how the root CA operates. It includes
+# paths to certificates, database files, serial number files, and more. 
+# It sets the groundwork for how certificates are managed and stored.
+[ CA_root ]
+dir = /opt/ca/root # Where everything is kept. You may adjust this
+
+certs         = $dir/certs              # Where to store certificates
+crl_dir       = $dir/crl                # Where to store CRLs
+new_certs_dir = $dir/newcerts           # Default place for new certs.
+database      = $dir/index.txt          # Database index file
+serial        = $dir/serial             # The current serial number
+RANDFILE      = $dir/private/.rand      # Private random number file
+
+certificate = $dir/cacert.pem # The root CA certificate will be saved here
+serial      = $dir/serial # The current serial number for the root CA
+crl         = $dir/crl.pem # The current CRL
+RANDFILE    = $dir/private/.rand # private random number file
+
+x509_extensions = v3_ca # The extentions to add to the cert
+default_days = 3650 # how long to certify for
+default_crl_days = 30 # how long CRLs are valid for
+default_md = sha256 # use public key default MD
+preserve = no # keep passed DN ordering
+
+policy = policy_root_ca # Reference to policy_root_ca section, below
+
+# Engine configuration
+openssl_conf = openssl_init
+
+# Specifies what values should be included in the certificate's subject field,
+# such as country name, organization, common name, etc. This section typically
+# includes prompts and default values for these fields
+# The _default values MUST BE ADJUSTED for your environment
+[ req_distinguished_name ]
+# The following controls what OpenSSL prompts for when generating CSRs
+# You should not need to adjust these...
+countryName = Country Name (2 letter code)
+countryName_default = US
+countryName_min = 2
+countryName_max = 2
+stateOrProvinceName = State or Province Name (full name)
+localityName = Locality Name (eg, city)
+0.organizationName = Organization Name (eg, company)
+organizationalUnitName = Organizational Unit Name (eg, section)
+commonName = Common Name (name on the certificate)
+commonName_max = 64
+emailAddress = Email Address
+emailAddress_max = 64
+
+# TODO: You MUST ADJUST these values -- they control what will appear on the
+# actual Root Certificate Authority
+countryName_default = TODO_YOUR_COUNRY_CODE # E.G: US
+stateOrProvinceName_default = TODO_YOUR_STATE_OR_PROVINCE # E.G: North Carolina
+localityName_default = TODO_YOUR_CITY # E.G: Asheville
+organizationName_default = TODO_YOUR_ORG_NAME # E.G: Acme, inc
+0.organizationName_default = TODO_YOUR_ORG_NAME # E.G: Acme, inc
+organizationalUnitName_default = TODO_THE_CA_ORG_NAME # E.G: Acme Certificate Authority
+commonName_default = TODO_COMMON_NAME_FOR_ROOT_CA # E.G: Acme inc Root Certificate Authority
+emailAddress_default = TODO_EMAIL_ADDRESS # E.G. ca@example.com
+
+# OpenSSL initilization section; needed for Yubikey backed keys
+# The following is all required in order to enable OpenSSL to leverage the
+# pkcs11 engine, so that the private key can be loaded from the yubikey as
+# opposed to a file on disk
+[ openssl_init ]
+engines = engine_section # Tie in to `[ engine_section ]`, needed for Yubikey
+
+[ engine_section ]
+pkcs11 = pkcs11_section 
+
+[ pkcs11_section ]
+engine_id = pkcs11
+dynamic_path = /usr/lib/x86_64-linux-gnu/libykcs11.so # Adjust the path to your pkcs11 engine
+MODULE_PATH = /usr/lib/x86_64-linux-gnu/libykcs11.so # Adjust to your PKCS#11 module path
+init = 0
+
+# Define the policy for what CSRs signed by the root CA must contain.
+# This section requires that Intermediate Certificates signed by the Root CA
+# have all the expected locality and contact information, but does not
+# require they match the Root CA's value. Adjust if you prefer.
+[ policy_root_ca ]
+countryName = supplied
+stateOrProvinceName = supplied
+localityName = supplied
+organizationName = supplied
+organizationalUnitName = supplied
+commonName = supplied
+emailAddress = supplied
+
+# This section controls the behavior of the openssl req command, which is used
+# for creating CSRs (Certificate Signing Requests) or self-signed certificates.
+# It includes settings for default key sizes, encryption algorithms, and the 
+# distinguished name fields that should be prompted for or included in the 
+# certificates.
+[ req ]
+default_bits = 4096
+default_keyfile = privkey.pem
+distinguished_name = req_distinguished_name
+attributes = req_attributes
+x509_extensions = v3_ca # The extensions to add to the self signed cert
+
+# Store the private key on the Yubikey:
+# This defined the "slot" for the yubikey private key
+# References: 
+#  https://developers.yubico.com/yubico-piv-tool/YKCS11/Functions_and_values.html#_key_alias_per_slot_and_object_type
+#  https://developers.yubico.com/PIV/Introduction/Certificate_slots.html
+default_keyfile = pkcs11:object=Private key for Digital Signature;type=private
+encrypt_key = no
+engine = pkcs11
+
+# used to define additional attributes or prompts that might be included when
+# generating a CSR or certificate
+[ req_attributes ]
+# challengePassword is a way to include a passphrase in a CSR, potentially used
+# for additional verification or security in the certificate issuance process.
+# Its actual use and utility can vary greatly depending on the specific CA and 
+# the operational environment of the PKI.
+challengePassword = A challenge password
+challengePassword_min = 4
+challengePassword_max = 40
+
+[ v3_ca ]
+# Extensions for a typical CA (`man x509v3_config`).
+subjectKeyIdentifier = hash
+basicConstraints = critical,CA:true
+keyUsage = critical, digitalSignature, cRLSign, keyCertSign
+crlDistributionPoints = TODO_YOUR_CRL_URL # E.G: URI:https://ca.acme.com/root/crl.pem
+
