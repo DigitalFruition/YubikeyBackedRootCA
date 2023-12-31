@@ -125,10 +125,15 @@ challengePassword = A challenge password
 challengePassword_min = 4
 challengePassword_max = 40
 
+# Defines extensions for a Root Certificate Authority
+# You most adjust the CRL Distribution Points, and probably the
+# Name Constraints
 [ v3_ca ]
 # Extensions for a typical CA (`man x509v3_config`).
 subjectKeyIdentifier = hash
 basicConstraints = critical,CA:true
 keyUsage = critical, digitalSignature, cRLSign, keyCertSign
+# TODO: You MUST set `crlDistributionPoints` to the URL where you'll upload the CRL to:
 crlDistributionPoints = TODO_YOUR_CRL_URL # E.G: URI:https://ca.acme.com/root/crl.pem
-
+# TODO: Limit the DNS domains the root CA can issue certifictes for -- or delete this to allow any domain:
+nameConstraints = permitted;DNS:.acme.com,permitted;DNS:.test.com,permitted;DNS:.example.com
