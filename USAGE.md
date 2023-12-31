@@ -95,7 +95,7 @@ machine is an attack vector against the VM. A VM might be easier, cheaper and sa
    - The `[ pkcs11_section ]` contains values which worked for me on Debian 11,
      but might need to be adjusted for your environment. I found these values
      with `find / -type f -name libykcs11.so 2>/dev/null`
-   - Finally, edit `crlDistributionPoints` under `[ v3_ca ]` and specify the URI
+   - Edit `crlDistributionPoints` under `[ v3_ca ]` and specify the URI
      where you will be uploading the Certificate Revocation list (CRL) for your
      new root CA. **This is very important** as some applications will **not trust**
      certificates unless they can validate them against the CRL.
@@ -103,6 +103,38 @@ machine is an attack vector against the VM. A VM might be easier, cheaper and sa
      The intention of this project is to hoste the CRL on the CloudFront Pages
      site backed by the GitHub fork of this repository, but you can specify any
      URI you like.
+   - Finally, either edit `nameConstraints` to suit your needs, or remove this
+     config stanza if you don't want restrictions on what domains or resources 
+     the root CA's intermediate CAs may issue certificates for.
+
+     `nameConstraints` is used to impose limitations on the subsequent 
+     certificate chain. This extension is crucial for establishing boundaries on
+     the scope of the CA and enhancing security by limiting where and how the 
+     certificates it issues can be validly used.
+
+     You can improve end user trust in your CA by restricting it to domains you
+     own or control, preventing the CA from being used to create certificates 
+     which allow man-in-the-middle eavedropping proxies.
+
+     The `nameConstraints` extension consists of two main lists:
+
+     Permitted Subtrees (`permittedSubtrees`): Specifies the namespace within 
+     which all subject names in subsequent certificates must reside. If this is
+     present in the certificate, any subsequent certificate's subject name must 
+     be within one of the specified namespaces.
+
+     Excluded Subtrees (`excludedSubtrees`): Specifies the namespace for which 
+     no subject names in subsequent certificates may reside. If this is present,
+     any subsequent certificate with a subject name within the excluded namespace
+     is invalid.
+
+     Within these lists, constraints can be applied to various types of names, 
+     such as:
+
+         - DNS: For domain names (e.g., permitted;DNS:.example.com allows any subdomain of example.com).
+         - IP: For specific IP address ranges.
+         - Directory: For distinguished names (DN) in a specific directory.
+         - URI, RFC822 (email), and other name forms.
 
 2. **Create Your Intermediate CA OpenSSL Configuration File**:
    - Similar to the Root CA configuration file, copy `intermediate/openssl.config.template`
@@ -114,14 +146,15 @@ machine is an attack vector against the VM. A VM might be easier, cheaper and sa
      still public information and should be correct and sane.
    - Adjust the policy under `[ policy_loose ]` if desired (E.G. if you want to
      require that CSRs you sign have locality information)
-   - 
+   - Edit `crlDistributionPoints` and specify the URI where you will be uploading
+     the Certificate Revocation list (CRL) for this Intermediate CA. Again, very
+     important to publish the CRL for application trust.
+   - Finally, again either edit `nameConstraints` to suit your needs, or remove.
+     Note that the Root CA's `nameConstraints` applies to the Intermediate as well
+     (all the way down the chain of trust).
 
 ## Conclusion
 
 Once you've completed these steps, you'll have an air-gapped CA environment with basic configurations for a Root and Intermediate CA. Continue with creating keys, signing certificates, and managing your CA as detailed in other documentation or guides specific to your CA's operational needs.
 
 Remember, managing a CA, especially an air-gapped one, requires careful attention to security, backups, and procedures. Always ensure that your practices align with industry standards and your organizational security policies.
-
----
-
-After drafting this USAGE.md, ensure to link all necessary scripts, templates, and additional documentation accurately. Keep it updated as your environment or procedures evolve. This document will serve as a practical guide for anyone needing to replicate or understand the setup of your CA environment.
