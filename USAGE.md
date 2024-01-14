@@ -37,27 +37,42 @@ machine is an attack vector against the VM. A VM might be easier, cheaper and sa
 
 1. **Prepare a Debian Bullseye installation media** - Download the latest Debian Bullseye image from the official website and prepare a bootable USB or CD.
 
-2. **Install Debian Bullseye with FDE**:
+1. **Install Debian Bullseye with FDE**:
    - Boot from the installation media.
    - Follow the installation prompts.
    - When partitioning, select the option for Full Disk Encryption (FDE).
    - Complete the installation process and boot into your new system.
 
-3. **Ensure Air-gap**:
+1. **Install Needed packages**:
+   - Run `./install.sh` from this repo (or manually install those packages)
+
+1. **Ensure Air-gap**:
    - Physically disconnect any network connections.
    - Avoid installing any unnecessary packages or services.
    - If using a Virtual Machine, either apply restrictive ingress/egress firewall rules,
      disconnect or remove the virtual ethernet device, and/or place the VM into a
      quarantined network or VLAN.
 
-## Step 2: Execute Setup Scripts
+## Step 2: Prepare the Yubikey
 
+1. **Ensure the Yubikey can be found:**
+   Execute `ykman list` and confirm the yubikey is displayes
+1. **Set a PIN and Management PIN for the Yubikey:**
+   - Change the Yubikey PIN with: `ykman piv change-pin`
+     The default is `123456`
+     This should be a random, 8-character password. it will be entered when signing CSRs.
+   - Change the Pin Unlock Code with: `ykman piv access change-puk`
+     The default is `12345678`
+     This will be used if you ever need to reset the PIN.
+   - Execute `ykman piv access change-management-key --generate --protect` to generate
+     a random management key which is stored on the Yubikey, protected by your PIN.
+   - Confirm with `ykman piv info`
 1. **Prepare Scripts**:
    - Copy the scripts from the `scripts/setup` directory of this project into your air-gapped 
      machine using a USB drive or similar means.
      You can also execute the commands from `scripts/setup` manually.
 
-2. **Run Setup Scripts**:
+1. **Run Setup Scripts**:
    - Navigate to the directory containing the scripts.
    - Execute the scripts to install prerequisite packages and create necessary directories:
 
@@ -136,7 +151,7 @@ machine is an attack vector against the VM. A VM might be easier, cheaper and sa
          - Directory: For distinguished names (DN) in a specific directory.
          - URI, RFC822 (email), and other name forms.
 
-2. **Create Your Intermediate CA OpenSSL Configuration File**:
+1. **Create Your Intermediate CA OpenSSL Configuration File**:
    - Similar to the Root CA configuration file, copy `intermediate/openssl.config.template`
      to `intermediate/openssl.config`
    - Again, if necessary, adjust the `dir` directive under `[ CA_default ]`
@@ -152,6 +167,59 @@ machine is an attack vector against the VM. A VM might be easier, cheaper and sa
    - Finally, again either edit `nameConstraints` to suit your needs, or remove.
      Note that the Root CA's `nameConstraints` applies to the Intermediate as well
      (all the way down the chain of trust).
+
+1. **Generate the Root CA:**
+   - Generate a private key on the yubikey with: 
+     ```
+     cd /opt/ca/root
+     ykman piv keys generate -a RSA2048 -F PEM --pin-policy ALWAYS --touch-policy ALWAYS 9c public.pem
+     ykman piv certificates generate -s 'C=US,ST=North Carolina,L=Asheville,O=Digital Fruition\, LLC,OU=Digital Fruition Certificate Authority,CN=Digital Fruition Root Certificate Authority' 9c public.pem
+     ```
+   - Confirm with `ykman piv info`
+   - Export the Root CA with: `ykman piv certificates export 9c /opt/ca/root/cacert.pem`
+   - Generate your CRL with:
+     ```
+     PKCS11_MODULE_PATH=/usr/lib/x86_64-linux-gnu/libykcs11.so openssl ca -gencrl -config /opt/ca/root/openssl.config -engine pkcs11 -keyform engine -keyfile "pkcs11:object=Private key for Digital Signature;type=private" -out /opt/ca/root/crl.pem
+     ```
+     Enter your Yubikey PIN (twice?) and then touch the yubikey
+   - Confirm the CRL with `cat /opt/ca/root/crl.pem`
+1. **Generate the Intermediate CA:**
+   - Generate the Intermediate CA's private key:
+     ```
+     openssl genrsa -out /opt/ca/intermediate/private/intermediate.key.pem 4096
+     ```
+   - Have the Intermediate generate a CSR:
+     ```
+     openssl req -config /opt/ca/intermediate/openssl.config \
+     -new -key /opt/ca/intermediate/private/intermediate.key.pem \
+     -out /opt/ca/intermediate/intermediate.csr
+     ```
+   - Sign the Intermediate CSR with the root CA:
+     ```
+     PKCS11_MODULE_PATH=/usr/lib/x86_64-linux-gnu/libykcs11.so openssl ca \
+     -config /opt/ca/root/openssl.config \
+     -extensions v3_intermediate_ca \
+     -out /opt/ca/intermediate/public.crt \
+     -infiles opt/ca/intermediate/intermediate.csr \
+     -engine pkcs11 -keyform engine \
+     -key "pkcs11:object=Private key for Digital Signature;type=private"
+
+
+     PKCS11_MODULE_PATH=/usr/lib/x86_64-linux-gnu/libykcs11.so openssl ca \
+     -extensions v3_intermediate_ca \
+     -out /opt/ca/intermediate/public.crt \
+     -infiles opt/ca/intermediate/intermediate.csr \
+     -engine pkcs11 -keyform engine \
+     -keyfile "pkcs11:object=Private key for Digital Signature;type=private"
+
+
+     PKCS11_MODULE_PATH=/usr/lib/x86_64-linux-gnu/libykcs11.so openssl ca \
+     -config /opt/ca/root/openssl.config \
+     -engine pkcs11 -keyform engine \
+     -keyfile "pkcs11:object=Private key for Digital Signature;type=private" \
+     -out /opt/ca/intermediate/public.crt \
+     -infiles /opt/ca/intermediate/intermediate.csr
+     ```
 
 ## Conclusion
 

@@ -22,7 +22,7 @@ serial      = $dir/serial # The current serial number for the root CA
 crl         = $dir/crl.pem # The current CRL
 RANDFILE    = $dir/private/.rand # private random number file
 
-x509_extensions = v3_ca # The extentions to add to the cert
+x509_extensions = v3_ca # The extensions to add to the cert
 default_days = 3650 # how long to certify for
 default_crl_days = 30 # how long CRLs are valid for
 default_md = sha256 # use public key default MD
@@ -135,5 +135,5 @@ basicConstraints = critical,CA:true
 keyUsage = critical, digitalSignature, cRLSign, keyCertSign
 # TODO: You MUST set `crlDistributionPoints` to the URL where you'll upload the CRL to:
 crlDistributionPoints = TODO_YOUR_CRL_URL # E.G: URI:https://ca.acme.com/root/crl.pem
-# TODO: Limit the DNS domains the root CA can issue certifictes for -- or delete this to allow any domain:
+# TODO: Limit the DNS domains the root CA can issue certificates for -- or delete this to allow any domain:
 nameConstraints = permitted;DNS:.acme.com,permitted;DNS:.test.com,permitted;DNS:.example.com
