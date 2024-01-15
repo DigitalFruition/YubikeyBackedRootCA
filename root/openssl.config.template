@@ -93,6 +93,19 @@ organizationalUnitName = supplied
 commonName = supplied
 emailAddress = supplied
 
+# Policy to use on the Intermediate Certificate Authority
+# This policy will be applied to any intermediate CAs signed by this root.
+# It's more permissive because the intermediate CAs will sign a variety of types
+# of certificates
+[ policy_loose ]
+countryName             = optional
+stateOrProvinceName     = optional
+localityName            = optional
+organizationName        = optional
+organizationalUnitName  = optional
+commonName              = supplied
+emailAddress            = optional
+
 # This section controls the behavior of the openssl req command, which is used
 # for creating CSRs (Certificate Signing Requests) or self-signed certificates.
 # It includes settings for default key sizes, encryption algorithms, and the 
@@ -100,10 +113,11 @@ emailAddress = supplied
 # certificates.
 [ req ]
 default_bits = 4096
-default_keyfile = privkey.pem
+default_md = sha256 # use SHA-256 instead of deprecated SHA1
 distinguished_name = req_distinguished_name
-attributes = req_attributes
+string_mask = utf8only
 x509_extensions = v3_ca # The extensions to add to the self signed cert
+
 
 # Store the private key on the Yubikey:
 # This defined the "slot" for the yubikey private key
@@ -131,9 +145,33 @@ challengePassword_max = 40
 [ v3_ca ]
 # Extensions for a typical CA (`man x509v3_config`).
 subjectKeyIdentifier = hash
-basicConstraints = critical,CA:true
+authorityKeyIdentifier = keyid:always,issuer
+basicConstraints = critical, CA:true
 keyUsage = critical, digitalSignature, cRLSign, keyCertSign
-# TODO: You MUST set `crlDistributionPoints` to the URL where you'll upload the CRL to:
-crlDistributionPoints = TODO_YOUR_CRL_URL # E.G: URI:https://ca.acme.com/root/crl.pem
 # TODO: Limit the DNS domains the root CA can issue certificates for -- or delete this to allow any domain:
 nameConstraints = permitted;DNS:.acme.com,permitted;DNS:.test.com,permitted;DNS:.example.com
+
+# When the root CA is used to sign intermediate CAs, the following section will
+# apply (because we specify -extension v3_intermediate_ca )
+[ v3_intermediate_ca ]
+# Extensions for a typical intermediate CA (`man x509v3_config`).
+subjectKeyIdentifier = hash
+authorityKeyIdentifier = keyid:always,issuer
+basicConstraints = critical, CA:true, pathlen:0
+keyUsage = critical, digitalSignature, cRLSign, keyCertSign
+# TODO: You MUST set `crlDistributionPoints` to the URL where you'll upload the root CRL to:
+crlDistributionPoints = TODO_YOUR_CRL_URL # E.G: URI:https://ca.acme.com/root/crl.pem
+
+# Extension used when creating CRLs
+[ crl_ext ]
+# Extension for CRLs (`man x509v3_config`).
+authorityKeyIdentifier=keyid:always
+
+# Extension used fof OSCP Stapling:
+[ ocsp ]
+# Extension for OCSP signing certificates (`man ocsp`).
+basicConstraints = CA:FALSE
+subjectKeyIdentifier = hash
+authorityKeyIdentifier = keyid,issuer
+keyUsage = critical, digitalSignature
+extendedKeyUsage = critical, OCSPSigning

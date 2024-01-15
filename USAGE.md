@@ -110,7 +110,7 @@ machine is an attack vector against the VM. A VM might be easier, cheaper and sa
    - The `[ pkcs11_section ]` contains values which worked for me on Debian 11,
      but might need to be adjusted for your environment. I found these values
      with `find / -type f -name libykcs11.so 2>/dev/null`
-   - Edit `crlDistributionPoints` under `[ v3_ca ]` and specify the URI
+   - Edit `crlDistributionPoints` under `[ v3_intermediate_ca ]` and specify the URI
      where you will be uploading the Certificate Revocation list (CRL) for your
      new root CA. **This is very important** as some applications will **not trust**
      certificates unless they can validate them against the CRL.
@@ -173,10 +173,19 @@ machine is an attack vector against the VM. A VM might be easier, cheaper and sa
      ```
      cd /opt/ca/root
      ykman piv keys generate -a RSA2048 -F PEM --pin-policy ALWAYS --touch-policy ALWAYS 9c public.pem
-     ykman piv certificates generate -s 'C=US,ST=North Carolina,L=Asheville,O=Digital Fruition\, LLC,OU=Digital Fruition Certificate Authority,CN=Digital Fruition Root Certificate Authority' 9c public.pem
      ```
    - Confirm with `ykman piv info`
-   - Export the Root CA with: `ykman piv certificates export 9c /opt/ca/root/cacert.pem`
+   - Export the Root CA's public key with: `ykman piv certificates export 9c /opt/ca/root/public.pem`
+   - Generate the Root CA Certificate with:
+     ```
+     PKCS11_MODULE_PATH=/usr/lib/x86_64-linux-gnu/libykcs11.so openssl req \
+      -config /opt/ca/root/openssl.config \
+      -engine pkcs11 -keyform engine \
+      -key "pkcs11:object=Private key for Digital Signature;type=private" \
+      -new -x509 -days 3651 -sha256 -extensions v3_ca \
+      -out /opt/ca/root/cacert.pem
+     ```
+   - Verify the root CA with: `openssl x509 -noout -text -in cacert.pem`
    - Generate your CRL with:
      ```
      PKCS11_MODULE_PATH=/usr/lib/x86_64-linux-gnu/libykcs11.so openssl ca -gencrl -config /opt/ca/root/openssl.config -engine pkcs11 -keyform engine -keyfile "pkcs11:object=Private key for Digital Signature;type=private" -out /opt/ca/root/crl.pem
@@ -186,7 +195,7 @@ machine is an attack vector against the VM. A VM might be easier, cheaper and sa
 1. **Generate the Intermediate CA:**
    - Generate the Intermediate CA's private key:
      ```
-     openssl genrsa -out /opt/ca/intermediate/private/intermediate.key.pem 4096
+     openssl genrsa -aes256 -out /opt/ca/intermediate/private/intermediate.key.pem 4096
      ```
    - Have the Intermediate generate a CSR:
      ```
@@ -199,22 +208,6 @@ machine is an attack vector against the VM. A VM might be easier, cheaper and sa
      PKCS11_MODULE_PATH=/usr/lib/x86_64-linux-gnu/libykcs11.so openssl ca \
      -config /opt/ca/root/openssl.config \
      -extensions v3_intermediate_ca \
-     -out /opt/ca/intermediate/public.crt \
-     -infiles opt/ca/intermediate/intermediate.csr \
-     -engine pkcs11 -keyform engine \
-     -key "pkcs11:object=Private key for Digital Signature;type=private"
-
-
-     PKCS11_MODULE_PATH=/usr/lib/x86_64-linux-gnu/libykcs11.so openssl ca \
-     -extensions v3_intermediate_ca \
-     -out /opt/ca/intermediate/public.crt \
-     -infiles opt/ca/intermediate/intermediate.csr \
-     -engine pkcs11 -keyform engine \
-     -keyfile "pkcs11:object=Private key for Digital Signature;type=private"
-
-
-     PKCS11_MODULE_PATH=/usr/lib/x86_64-linux-gnu/libykcs11.so openssl ca \
-     -config /opt/ca/root/openssl.config \
      -engine pkcs11 -keyform engine \
      -keyfile "pkcs11:object=Private key for Digital Signature;type=private" \
      -out /opt/ca/intermediate/public.crt \

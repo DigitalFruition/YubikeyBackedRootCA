@@ -91,7 +91,7 @@ authorityKeyIdentifier = keyid:always,issuer
 basicConstraints = critical,CA:true,pathlen:0
 keyUsage = critical, digitalSignature, cRLSign, keyCertSign
 crlDistributionPoints = TODO_YOUR_CRL_URL # E.G: URI:https://ca.acme.com/intermediate/crl.pem
-# TODO: Limit the DNS domains the intermediate CA can issue certifictes for -- or delete this to allow any domain:
+# TODO: Limit the DNS domains the intermediate CA can issue certificates for -- or delete this to allow any domain:
 nameConstraints = permitted;DNS:.acme.com,permitted;DNS:.test.com,permitted;DNS:.example.com
 
 [ crl_ext ]
