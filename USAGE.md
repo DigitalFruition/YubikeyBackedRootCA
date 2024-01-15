@@ -52,6 +52,14 @@ machine is an attack vector against the VM. A VM might be easier, cheaper and sa
    - If using a Virtual Machine, either apply restrictive ingress/egress firewall rules,
      disconnect or remove the virtual ethernet device, and/or place the VM into a
      quarantined network or VLAN.
+   - If you would like to enable the machine to securely pull and push from the
+     GitHub repo you created for your CA, you can enable networking rules to pass
+     SSH traffic to a trusted host, and then use the `ProxyHost` setting in your
+     `.ssh/config` file to use that host as a proxy:
+     ```
+     Host github.com
+       ProxyJump your.trusted.host
+     ```
 
 ## Step 2: Prepare the Yubikey
 
