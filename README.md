@@ -28,7 +28,7 @@ The root CA's private key is the most critical asset in your PKI. Compromise of 
 
 - **Protection**: Keys can't be extracted from the device and are protected against physical and logical attacks.
 - **Portability**: The YubiKey is small, durable, and easily portable, allowing for secure key usage across different machines.
-- **Ease of Use**: Despite the strong security, YubiKeys are user-friendly and support various cryptographic operations needed for CA management.
+- **Ease of Use**: Despite the strong security, Yubikeys are user-friendly and support various cryptographic operations needed for CA management.
 
 ## Getting Started
 
@@ -44,4 +44,9 @@ To start building your own CA using this project:
 
 ---
 
-After setting up your initial README.md, review and update it regularly as your project evolves or as new best practices emerge. It's your front-facing document that will guide new users or contributors, so clarity, accuracy, and up-to-date information are key.
+## References:
+
+* Chat GPT 4 was used to create many of the instructions and commands used in this guide
+* ["OpenSSL Certificate Authority"](https://jamielinux.com/docs/openssl-certificate-authority/introduction.html)
+  by [Jamie Nguyen](https://jamielinux.com/docs/openssl-certificate-authority/introduction.html) 
+  was used to adjust some of the commands.
