@@ -1,0 +1,98 @@
+# This section names the default CA configuration to use when the
+# openssl ca utility is invoked. It points at the `[ CA_default ]` section
+[ ca ]
+default_ca = CA_intermediate
+
+# This is one of the most critical sections, defining default directories,
+# file locations, and policies for how the intermediate CA operates. It includes
+# paths to certificates, database files, serial number files, and more. 
+# It sets the groundwork for how certificates are managed and stored.
+[ CA_intermediate ]
+dir = /opt/ca/intermediate # Where everything is kept. You may adjust this
+
+certs             = $dir/certs              # Where to store certificates
+crl_dir           = $dir/crl                # Where to store CRLs
+new_certs_dir     = $dir/newcerts           # Default place for new certs.
+database          = $dir/index.txt          # Database index file
+serial            = $dir/serial             # The current serial number
+RANDFILE          = $dir/private/.rand      # Private random number file
+
+private_key       = $dir/private/intermediate.key.pem # The private key
+certificate       = $dir/certs/intermediate.pem  # The CA certificate
+
+crlnumber         = $dir/crlnumber          # The current crl number
+crl               = $dir/crl/intermediate.crl.pem     # The current CRL
+crl_extensions    = crl_ext
+default_crl_days  = 30                      # How long before next CRL
+
+default_md        = sha256                  # Use SHA-256 for signing
+name_opt          = ca_default              # Subject Name options
+cert_opt          = ca_default              # Certificate field options
+
+default_days      = 3650                    # How long to certify for
+preserve          = no                      # Keep passed DN ordering
+
+policy            = policy_loose
+
+# Specifies what values should be included in the certificate's subject field,
+# such as country name, organization, common name, etc. This section typically
+# includes prompts and default values for these fields
+# The _default values MUST BE ADJUSTED for your environment
+[ req_distinguished_name ]
+# The following controls what OpenSSL prompts for when generating CSRs
+# You should not need to adjust these...
+countryName = Country Name (2 letter code)
+countryName_default = US
+countryName_min = 2
+countryName_max = 2
+stateOrProvinceName = State or Province Name (full name)
+localityName = Locality Name (eg, city)
+0.organizationName = Organization Name (eg, company)
+organizationalUnitName = Organizational Unit Name (eg, section)
+commonName = Common Name (name on the certificate)
+commonName_max = 64
+emailAddress = Email Address
+emailAddress_max = 64
+
+# TODO: You MUST ADJUST these values -- they control what will appear on the
+# actual Intermediate Certificate Authority
+countryName_default = TODO_YOUR_COUNRY_CODE # E.G: US
+stateOrProvinceName_default = TODO_YOUR_STATE_OR_PROVINCE # E.G: North Carolina
+localityName_default = TODO_YOUR_CITY # E.G: Asheville
+organizationName_default = TODO_YOUR_ORG_NAME # E.G: Acme, inc
+0.organizationName_default = TODO_YOUR_ORG_NAME # E.G: Acme, inc
+organizationalUnitName_default = TODO_THE_CA_ORG_NAME # E.G: Acme Certificate Authority
+commonName_default = TODO_COMMON_NAME_FOR_ROOT_CA # E.G: Acme inc Intermediate Certificate Authority
+emailAddress_default = TODO_EMAIL_ADDRESS # E.G. ca@example.com
+
+# Define the policy for what CSRs signed by the intermediate CA must contain.
+# This section requires that end Certificates signed by the Intermediate CA
+# have a Common Name (CN) but nothing else. Adjust however you prefer
+[ policy_loose ]
+countryName             = optional
+stateOrProvinceName     = optional
+localityName            = optional
+organizationName        = optional
+organizationalUnitName  = optional
+commonName              = supplied
+emailAddress            = optional
+
+[ req ]
+default_bits        = 2048
+distinguished_name  = req_distinguished_name
+string_mask         = utf8only
+
+# Defines extensions for an Intermediate Certificate Authority
+# You most adjust the CRL Distribution Points, and probably the
+# Name Constraints
+[ v3_intermediate_ca ]
+subjectKeyIdentifier = hash
+authorityKeyIdentifier = keyid:always,issuer
+basicConstraints = critical,CA:true,pathlen:0
+keyUsage = critical, digitalSignature, cRLSign, keyCertSign
+crlDistributionPoints = TODO_YOUR_CRL_URL # E.G: URI:https://ca.acme.com/intermediate/crl.pem
+# TODO: Limit the DNS domains the intermediate CA can issue certificates for -- or delete this to allow any domain:
+nameConstraints = permitted;DNS:.acme.com,permitted;DNS:.test.com,permitted;DNS:.example.com
+
+[ crl_ext ]
+authorityKeyIdentifier=keyid:always
