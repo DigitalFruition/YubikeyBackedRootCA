@@ -34,6 +34,8 @@ preserve          = no                      # Keep passed DN ordering
 
 policy            = policy_loose
 
+copy_extensions = copy # Needed to allow SAN on CSR to be copied.
+
 # Specifies what values should be included in the certificate's subject field,
 # such as country name, organization, common name, etc. This section typically
 # includes prompts and default values for these fields

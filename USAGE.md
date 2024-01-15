@@ -226,6 +226,19 @@ machine is an attack vector against the VM. A VM might be easier, cheaper and sa
      -infiles /opt/ca/intermediate/intermediate.csr
      ```
 
+## Using the Intermediate Certificate Authority:
+
+### Signing Certificates
+
+1. Load the CSR into `/opt/ca/intermediate/requests`
+1. Sign the CSR:
+   ```
+   sudo openssl ca -config /opt/ca/intermediate/openssl.config \
+     -extensions server_cert -days 370 -notext -md sha256 \
+     -in requests/TODO.csr \
+     -out newcerts/TODO.crt
+    ```
+
 ## Conclusion
 
 Once you've completed these steps, you'll have an air-gapped CA environment with basic configurations for a Root and Intermediate CA. Continue with creating keys, signing certificates, and managing your CA as detailed in other documentation or guides specific to your CA's operational needs.

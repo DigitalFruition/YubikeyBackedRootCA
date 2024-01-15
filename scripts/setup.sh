@@ -2,10 +2,12 @@
 
 mkdir -m 750 -p /opt/ca/{root,intermediate}/{crl,newcerts}
 touch /opt/ca/{root,intermediate}/index.txt
+mkdir -m 777 /opt/ca/intermediate/requests
 
 mkdir -p /opt/ca/{root,intermediate}/private
 chown root:root /opt/ca/{root,intermediate}/private
 chmod 700 /opt/ca/{root,intermediate}/private
+
 
 if ! [[ -f "/opt/ca/root/serial" ]]; then
   echo "01" > "/opt/ca/root/serial"
