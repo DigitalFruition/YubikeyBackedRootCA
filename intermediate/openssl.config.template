@@ -83,7 +83,7 @@ distinguished_name  = req_distinguished_name
 string_mask         = utf8only
 
 # Defines extensions for an Intermediate Certificate Authority
-# You most adjust the CRL Distribution Points, and probably the
+# You must adjust the CRL Distribution Points, and probably the
 # Name Constraints
 [ v3_intermediate_ca ]
 subjectKeyIdentifier = hash
