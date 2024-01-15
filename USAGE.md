@@ -52,6 +52,14 @@ machine is an attack vector against the VM. A VM might be easier, cheaper and sa
    - If using a Virtual Machine, either apply restrictive ingress/egress firewall rules,
      disconnect or remove the virtual ethernet device, and/or place the VM into a
      quarantined network or VLAN.
+   - If you would like to enable the machine to securely pull and push from the
+     GitHub repo you created for your CA, you can enable networking rules to pass
+     SSH traffic to a trusted host, and then use the `ProxyHost` setting in your
+     `.ssh/config` file to use that host as a proxy:
+     ```
+     Host github.com
+       ProxyJump your.trusted.host
+     ```
 
 ## Step 2: Prepare the Yubikey
 
@@ -175,10 +183,10 @@ machine is an attack vector against the VM. A VM might be easier, cheaper and sa
      ykman piv keys generate -a RSA2048 -F PEM --pin-policy ALWAYS --touch-policy ALWAYS 9c public.pem
      ```
    - Confirm with `ykman piv info`
-   - Export the Root CA's public key with: `ykman piv certificates export 9c /opt/ca/root/public.pem`
+   - Export the Root CA's public key with: `sudo ykman piv certificates export 9c /opt/ca/root/public.pem`
    - Generate the Root CA Certificate with:
      ```
-     PKCS11_MODULE_PATH=/usr/lib/x86_64-linux-gnu/libykcs11.so openssl req \
+     sudo PKCS11_MODULE_PATH=/usr/lib/x86_64-linux-gnu/libykcs11.so openssl req \
       -config /opt/ca/root/openssl.config \
       -engine pkcs11 -keyform engine \
       -key "pkcs11:object=Private key for Digital Signature;type=private" \
@@ -188,31 +196,48 @@ machine is an attack vector against the VM. A VM might be easier, cheaper and sa
    - Verify the root CA with: `openssl x509 -noout -text -in cacert.pem`
    - Generate your CRL with:
      ```
-     PKCS11_MODULE_PATH=/usr/lib/x86_64-linux-gnu/libykcs11.so openssl ca -gencrl -config /opt/ca/root/openssl.config -engine pkcs11 -keyform engine -keyfile "pkcs11:object=Private key for Digital Signature;type=private" -out /opt/ca/root/crl.pem
+     sudo PKCS11_MODULE_PATH=/usr/lib/x86_64-linux-gnu/libykcs11.so openssl ca \
+       -gencrl -config /opt/ca/root/openssl.config \
+       -engine pkcs11 -keyform engine \
+       -keyfile "pkcs11:object=Private key for Digital Signature;type=private" \
+       -out /opt/ca/root/crl.pem
      ```
-     Enter your Yubikey PIN (twice?) and then touch the yubikey
+     Enter your Yubikey PIN (twice) and then touch the yubikey
    - Confirm the CRL with `cat /opt/ca/root/crl.pem`
 1. **Generate the Intermediate CA:**
    - Generate the Intermediate CA's private key:
      ```
-     openssl genrsa -aes256 -out /opt/ca/intermediate/private/intermediate.key.pem 4096
+     sudo openssl genrsa -aes256 -out /opt/ca/intermediate/private/intermediate.key.pem 4096
      ```
    - Have the Intermediate generate a CSR:
      ```
-     openssl req -config /opt/ca/intermediate/openssl.config \
+     sudo openssl req -config /opt/ca/intermediate/openssl.config \
      -new -key /opt/ca/intermediate/private/intermediate.key.pem \
      -out /opt/ca/intermediate/intermediate.csr
      ```
    - Sign the Intermediate CSR with the root CA:
      ```
-     PKCS11_MODULE_PATH=/usr/lib/x86_64-linux-gnu/libykcs11.so openssl ca \
+     sudo PKCS11_MODULE_PATH=/usr/lib/x86_64-linux-gnu/libykcs11.so openssl ca \
      -config /opt/ca/root/openssl.config \
      -extensions v3_intermediate_ca \
      -engine pkcs11 -keyform engine \
      -keyfile "pkcs11:object=Private key for Digital Signature;type=private" \
-     -out /opt/ca/intermediate/public.crt \
+     -out /opt/ca/intermediate/intermediate.pem \
      -infiles /opt/ca/intermediate/intermediate.csr
      ```
+
+## Using the Intermediate Certificate Authority:
+
+### Signing Certificates
+
+1. Load the CSR into `/opt/ca/intermediate/requests`
+1. Sign the CSR:
+   ```
+   sudo openssl ca -config /opt/ca/intermediate/openssl.config \
+     -extensions server_cert -days 370 -notext -md sha256 \
+     -in requests/TODO.csr \
+     -out newcerts/TODO.crt
+    ```
 
 ## Conclusion
 
