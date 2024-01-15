@@ -222,7 +222,7 @@ machine is an attack vector against the VM. A VM might be easier, cheaper and sa
      -extensions v3_intermediate_ca \
      -engine pkcs11 -keyform engine \
      -keyfile "pkcs11:object=Private key for Digital Signature;type=private" \
-     -out /opt/ca/intermediate/public.crt \
+     -out /opt/ca/intermediate/intermediate.pem \
      -infiles /opt/ca/intermediate/intermediate.csr
      ```
 
