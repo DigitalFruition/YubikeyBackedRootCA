@@ -50,3 +50,6 @@ To start building your own CA using this project:
 * ["OpenSSL Certificate Authority"](https://jamielinux.com/docs/openssl-certificate-authority/introduction.html)
   by [Jamie Nguyen](https://jamielinux.com/docs/openssl-certificate-authority/introduction.html) 
   was used to adjust some of the commands.
+* [Supported PKCS#11 Functions](https://developers.yubico.com/yubico-piv-tool/YKCS11/Functions_and_values.html#_key_alias_per_slot_and_object_type) Yubico developer documentation.
+* [PIV certificate slots](https://developers.yubico.com/PIV/Introduction/Certificate_slots.html)
+  Yubico developer documentation.
